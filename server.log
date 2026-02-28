@@ -1,0 +1,18 @@
+✅ Database connected successfully to: idmarketdb
+
+🚀 ID Card Management API running on http://localhost:5000
+📋 Available routes:
+   POST  /api/auth/login
+   GET   /api/auth/me
+   GET   /api/tenants
+   GET   /api/requests
+   POST  /api/requests
+   GET   /api/requests/:id
+   GET   /api/requests/stats
+   GET   /api/students/request/:request_id
+   POST  /api/students/bulk
+   GET   /api/samples/request/:request_id
+   POST  /api/samples
+   GET   /api/approvals/request/:request_id
+   POST  /api/approvals
+

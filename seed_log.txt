@@ -1,0 +1,13 @@
+🌱 Starting database seeding...
+
+✅ Created user: admin@gmmc.com / Admin@123 (GMMC_ADMIN)
+✅ Created user: printer@idcard.com / Printer@123 (PRINTER)
+
+✨ Seeding complete!
+
+📋 Login credentials:
+   GMMC_ADMIN: admin@gmmc.com / Admin@123
+   PRINTER: printer@idcard.com / Printer@123
+
+   For SCHOOL_ADMIN: Create a tenant first, then add user with SCHOOL_ADMIN role via DB.
+

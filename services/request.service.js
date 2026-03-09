@@ -138,4 +138,14 @@ const getStatusCounts = async (tenant_id = null) => {
     return rows;
 };
 
-module.exports = { getAll, getById, getWithDetails, create, updateStatus, getStatusCounts };
+const updateDispatch = async (id, status, tracking_info) => {
+    const [result] = await pool.query(
+        `UPDATE id_card_requests 
+         SET current_status = ?, tracking_info = ?, updated_at = NOW() 
+         WHERE id = ?`,
+        [status || 'DISPATCHED', tracking_info || null, id]
+    );
+    return result.affectedRows;
+};
+
+module.exports = { getAll, getById, getWithDetails, create, updateStatus, updateDispatch, getStatusCounts };

@@ -20,4 +20,7 @@ router.post('/', requestController.create);
 // PATCH /api/requests/:id/status - admin override status
 router.patch('/:id/status', requestController.updateStatus);
 
+// PATCH /api/requests/:id/dispatch - Submit tracking info and mark as dispatched
+router.patch('/:id/dispatch', requestController.updateDispatch);
+
 module.exports = router;

@@ -54,6 +54,27 @@ const getStatusCounts = async (req, res) => {
     } catch (err) {
         return res.status(500).json({ success: false, message: err.message });
     }
+
 };
 
-module.exports = { getAll, getById, create, updateStatus, getStatusCounts };
+const updateDispatch = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status, tracking_info } = req.body;
+        
+        const affected = await requestService.updateDispatch(id, status, tracking_info);
+        
+        if (!affected) {
+            return res.status(404).json({ success: false, message: 'Request not found.' });
+        }
+        
+        return res.status(200).json({ 
+            success: true, 
+            message: 'Request marked as dispatched.' 
+        });
+    } catch (err) {
+        return res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+module.exports = { getAll, getById, create, updateStatus, updateDispatch, getStatusCounts };

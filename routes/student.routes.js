@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const studentController = require('../controllers/student.controller');
-const { authenticate } = require('../middleware/auth.middleware');
+const { authenticate, authorizeRoles } = require('../middleware/auth.middleware');
 
 router.use(authenticate);
+router.use(authorizeRoles('school', 'SCHOOL_ADMIN', 'admin', 'GMMC_ADMIN', 'printer', 'PRINTER'));
 
 router.get('/request/:request_id', studentController.getByRequest);
 router.get('/:id', studentController.getById);

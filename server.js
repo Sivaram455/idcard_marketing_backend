@@ -13,6 +13,7 @@ const studentRoutes = require('./routes/student.routes');
 const sampleRoutes = require('./routes/sample.routes');
 const approvalRoutes = require('./routes/approval.routes');
 const uploadRoutes = require('./routes/upload.routes');
+const marketingRoutes = require('./routes/marketing.routes');
 
 const app = express();
 
@@ -46,6 +47,7 @@ app.use('/api/students', studentRoutes);
 app.use('/api/samples', sampleRoutes);
 app.use('/api/approvals', approvalRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/marketing', marketingRoutes);
 
 // ─── 404 Handler ──────────────────────────────────────────────
 app.use((req, res) => {
@@ -64,21 +66,8 @@ const PORT = process.env.PORT || 5000;
 const startServer = async () => {
     await testConnection();
     app.listen(PORT, () => {
-        console.log(`\n🚀 ID Card Management API running on http://localhost:${PORT}`);
-        console.log(`📋 Available routes:`);
-        console.log(`   POST  /api/auth/login`);
-        console.log(`   GET   /api/auth/me`);
-        console.log(`   GET   /api/tenants`);
-        console.log(`   GET   /api/requests`);
-        console.log(`   POST  /api/requests`);
-        console.log(`   GET   /api/requests/:id`);
-        console.log(`   GET   /api/requests/stats`);
-        console.log(`   GET   /api/students/request/:request_id`);
-        console.log(`   POST  /api/students/bulk`);
-        console.log(`   GET   /api/samples/request/:request_id`);
-        console.log(`   POST  /api/samples`);
-        console.log(`   GET   /api/approvals/request/:request_id`);
-        console.log(`   POST  /api/approvals\n`);
+        console.log(`\n ID Card Management API running on http://localhost:${PORT}`);
+       
     });
 };
 

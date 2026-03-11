@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const path = require('path');
-const { authenticate } = require('../middleware/auth.middleware');
+const { authenticate, authorizeRoles } = require('../middleware/auth.middleware');
 const { upload } = require('../middleware/upload.middleware');
 
 router.use(authenticate);
+router.use(authorizeRoles('school', 'SCHOOL_ADMIN', 'admin', 'GMMC_ADMIN', 'printer', 'PRINTER'));
 
 // POST /api/upload/:folder  — upload a single file
 // folder can be: logos, signatures, samples, photos, general

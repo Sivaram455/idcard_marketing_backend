@@ -20,7 +20,15 @@ const authenticate = (req, res, next) => {
 
 const authorizeRoles = (...roles) => {
     return (req, res, next) => {
-        if (!roles.includes(req.user.role)) {
+        const userRole = req.user.role ? req.user.role.toUpperCase() : '';
+        const allowedRoles = roles.map(r => r.toUpperCase());
+
+        // Super admin can access anything
+        if (userRole === 'ADMIN' || userRole === 'GMMC_ADMIN') {
+            return next();
+        }
+
+        if (!allowedRoles.includes(userRole)) {
             return res.status(403).json({
                 success: false,
                 message: `Access denied. Required role: ${roles.join(' or ')}`

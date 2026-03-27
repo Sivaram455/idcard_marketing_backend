@@ -15,6 +15,7 @@ const approvalRoutes = require('./routes/approval.routes');
 const uploadRoutes = require('./routes/upload.routes');
 const marketingRoutes = require('./routes/marketing.routes');
 const ticketingRoutes = require('./routes/ticketing.routes');
+const orderRoutes = require('./routes/order.routes');
 
 const app = express();
 
@@ -50,6 +51,7 @@ app.use('/api/approvals', approvalRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/marketing', marketingRoutes);
 app.use('/api/ticketing', ticketingRoutes);
+app.use('/api/orders', orderRoutes);
 
 // ─── 404 Handler ──────────────────────────────────────────────
 app.use((req, res) => {

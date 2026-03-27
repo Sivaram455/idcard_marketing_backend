@@ -71,7 +71,21 @@ async function setup() {
         `);
         console.log('✅ Ticket Attachments table created.');
 
-        // 4. Create sample users for testing
+        // 4. Create ticket_comments table
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS ticket_comments (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                ticket_id BIGINT NOT NULL,
+                user_id BIGINT NOT NULL,
+                comment TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        `);
+        console.log('✅ Ticket Comments table created.');
+
+        // 5. Create sample users for testing
         const bcrypt = require('bcryptjs');
         const supportHash = await bcrypt.hash('support123', 10);
         const devHash = await bcrypt.hash('dev123', 10);
@@ -79,12 +93,31 @@ async function setup() {
         await pool.query(`
             INSERT IGNORE INTO users (full_name, email, password_hash, role, status)
             VALUES 
-            ('Support User', 'support@idpro.com', ?, 'SUPPORT', 'ACTIVE'),
-            ('Developer User', 'dev@idpro.com', ?, 'DEVELOPER', 'ACTIVE')
+            ('Support Lead', 'support@idpro.com', ?, 'SUPPORT', 'ACTIVE'),
+            ('Senior Developer', 'dev@idpro.com', ?, 'DEVELOPER', 'ACTIVE')
         `, [supportHash, devHash]);
-        console.log('✅ Sample users created (support@idpro.com/support123, dev@idpro.com/dev123).');
+        console.log('✅ Tech team aliases created (support@idpro.com, dev@idpro.com).');
 
-        console.log('\n✨ Ticketing setup complete!');
+        // 6. Create initial tickets if none exist
+        const [existing] = await pool.query("SELECT COUNT(*) as count FROM tickets");
+        if (existing[0].count === 0) {
+            console.log('🔧 Seeding initial system health reports...');
+            // We need a creator ID (admin) and a tenant ID
+            const [admins]  = await pool.query("SELECT id FROM users WHERE role IN ('admin', 'GMMC_ADMIN') LIMIT 1");
+            const [tenants] = await pool.query("SELECT id FROM tenants LIMIT 1");
+
+            if (admins.length && tenants.length) {
+                await pool.query(`
+                    INSERT INTO tickets (title, description, status, priority, created_by, tenant_id)
+                    VALUES 
+                    ('Database Performance Spike', 'Monitoring node detects high CPU usage in the production cluster during bulk exports.', 'IN_PROGRESS', 'HIGH', ?, ?),
+                    ('New School Onboarding UI Bug', 'Tenant registration fails when special characters are used in the school name.', 'OPEN', 'MEDIUM', ?, ?)
+                `, [admins[0].id, tenants[0].id, admins[0].id, tenants[0].id]);
+                console.log('✅ Initial tickets seeded.');
+            }
+        }
+
+        console.log('\n✨ Ticketing Architecture Established!');
         process.exit(0);
     } catch (err) {
         console.error('❌ Setup failed:', err.message);

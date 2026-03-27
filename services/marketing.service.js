@@ -3,31 +3,41 @@ const { pool } = require('../config/db');
 // --- Schools ---
 
 const createSchool = async (data) => {
-    const { school_name, contact_person1, contact_person2, mobile, email, address, city, state, comments } = data;
+    const { school_name, contact_person1, contact_person2, mobile, email, address, city, state, comments, interested_in, studentscount, demorequire, Board } = data;
     const [result] = await pool.query(
-        `INSERT INTO schools (school_name, contact_person1, contact_person2, mobile, email, address, city, state, comments)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [school_name, contact_person1, contact_person2, mobile, email, address, city, state, comments]
+        `INSERT INTO schools (school_name, contact_person1, contact_person2, mobile, email, address, city, state, comments, interested_in, studentscount, demorequire, Board)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [school_name, contact_person1, contact_person2, mobile, email, address, city, state, comments, interested_in, studentscount, demorequire, Board]
     );
     return result.insertId;
 };
 
 const getAllSchools = async () => {
-    const [rows] = await pool.query('SELECT * FROM schools ORDER BY created_at DESC');
+    const [rows] = await pool.query(`
+        SELECT s.*, u.full_name AS assigned_to_name
+        FROM schools s
+        LEFT JOIN users u ON s.assigned_to = u.id
+        ORDER BY s.created_at DESC
+    `);
     return rows;
 };
 
 const getSchoolById = async (id) => {
-    const [rows] = await pool.query('SELECT * FROM schools WHERE id = ?', [id]);
+    const [rows] = await pool.query(`
+        SELECT s.*, u.full_name AS assigned_to_name
+        FROM schools s
+        LEFT JOIN users u ON s.assigned_to = u.id
+        WHERE s.id = ?
+    `, [id]);
     return rows[0];
 };
 
 const updateSchool = async (id, data) => {
-    const { school_name, contact_person1, contact_person2, mobile, email, address, city, state, comments, status } = data;
+    const { school_name, contact_person1, contact_person2, mobile, email, address, city, state, comments, status, interested_in, studentscount, demorequire, Board } = data;
     const [result] = await pool.query(
-        `UPDATE schools SET school_name=?, contact_person1=?, contact_person2=?, mobile=?, email=?, address=?, city=?, state=?, comments=?, status=?
+        `UPDATE schools SET school_name=?, contact_person1=?, contact_person2=?, mobile=?, email=?, address=?, city=?, state=?, comments=?, status=?, interested_in=?, studentscount=?, demorequire=?, Board=?
          WHERE id = ?`,
-        [school_name, contact_person1, contact_person2, mobile, email, address, city, state, comments, status, id]
+        [school_name, contact_person1, contact_person2, mobile, email, address, city, state, comments, status, interested_in, studentscount, demorequire, Board, id]
     );
     return result.affectedRows;
 };
@@ -40,10 +50,18 @@ const deleteSchool = async (id) => {
 // --- Agent Schools ---
 
 const assignSchoolToAgent = async (agent_id, school_id, assigned_date) => {
+    const date = assigned_date || new Date();
+    // Insert into junction table
     const [result] = await pool.query(
         `INSERT INTO agent_schools (agent_id, school_id, assigned_date)
-         VALUES (?, ?, ?)`,
-        [agent_id, school_id, assigned_date || new Date()]
+         VALUES (?, ?, ?)
+         ON DUPLICATE KEY UPDATE agent_id = VALUES(agent_id), assigned_date = VALUES(assigned_date)`,
+        [agent_id, school_id, date]
+    );
+    // Also update the schools table directly for easy querying
+    await pool.query(
+        `UPDATE schools SET assigned_to = ?, assigned_date = ? WHERE id = ?`,
+        [agent_id, date, school_id]
     );
     return result.insertId;
 };

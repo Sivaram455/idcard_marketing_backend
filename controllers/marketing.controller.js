@@ -7,7 +7,8 @@ const createSchool = async (req, res) => {
         const id = await marketingService.createSchool(req.body);
         
         // If the person creating the lead is an agent, auto-assign it to them
-        if (req.user.role === 'agent') {
+        const userRole = req.user.role?.toUpperCase();
+        if (userRole === 'AGENT' || userRole === 'MARKETER') {
             await marketingService.assignSchoolToAgent(req.user.id, id, new Date());
         }
 
@@ -19,9 +20,10 @@ const createSchool = async (req, res) => {
 
 const getAllSchools = async (req, res) => {
     try {
+        const userRole = req.user.role?.toUpperCase();
         // If agent, only get assigned schools. If admin, get all.
         let schools;
-        if (req.user.role === 'agent') {
+        if (userRole === 'AGENT' || userRole === 'MARKETER') {
             schools = await marketingService.getSchoolsByAgent(req.user.id);
         } else {
             schools = await marketingService.getAllSchools();
@@ -69,10 +71,11 @@ const assignSchool = async (req, res) => {
 
 const createActivity = async (req, res) => {
     try {
+        const userRole = req.user.role?.toUpperCase();
         // Always set agent_id to current user if they are an agent
         const activityData = {
             ...req.body,
-            agent_id: req.user.role === 'agent' ? req.user.id : req.body.agent_id
+            agent_id: (userRole === 'AGENT' || userRole === 'MARKETER') ? req.user.id : req.body.agent_id
         };
         const id = await marketingService.createActivity(activityData);
         res.status(201).json({ success: true, message: 'Activity logged successfully', data: { id } });
@@ -83,7 +86,8 @@ const createActivity = async (req, res) => {
 
 const getMyActivities = async (req, res) => {
     try {
-        const activities = (req.user.role === 'admin' || req.user.role === 'GMMC_ADMIN')
+        const userRole = req.user.role?.toUpperCase();
+        const activities = (userRole === 'ADMIN' || userRole === 'GMMC_ADMIN')
             ? await marketingService.getAllActivities()
             : await marketingService.getActivitiesByAgent(req.user.id);
         res.json({ success: true, data: activities });
@@ -94,7 +98,8 @@ const getMyActivities = async (req, res) => {
 
 const getPendingFollowUps = async (req, res) => {
     try {
-        const activities = (req.user.role === 'admin' || req.user.role === 'GMMC_ADMIN')
+        const userRole = req.user.role?.toUpperCase();
+        const activities = (userRole === 'ADMIN' || userRole === 'GMMC_ADMIN')
             ? await marketingService.getAllPendingFollowUps()
             : await marketingService.getPendingFollowUps(req.user.id);
         res.json({ success: true, data: activities });

@@ -1,22 +1,31 @@
 const { pool } = require('../config/db');
 
-// Status transitions per role
+// Status Map: Key is current_status, value is map of action -> newStatus
 const STATUS_MAP = {
-    GMMC: {
+    SUBMITTED: {
         APPROVED: 'GMMC_APPROVED',
         REJECTED: 'GMMC_REJECTED',
     },
-    PRINTER: {
+    GMMC_APPROVED: {
         APPROVED: 'PRINTER_APPROVED',
-        REJECTED: 'PRINTER_REJECTED',
+        REJECTED: 'GMMC_REJECTED', // Goes back to GMMC stage (maybe they need to pick another printer?)
     },
-    SCHOOL: {
+    PRINTER_APPROVED: {
+        // Status typically updated by Sample Upload API
+        APPROVED: 'SAMPLE_UPLOADED',
+        REJECTED: 'GMMC_APPROVED',
+    },
+    SAMPLE_UPLOADED: {
         APPROVED: 'SCHOOL_VERIFIED',
-        REJECTED: 'GMMC_APPROVED', // School rejects -> goes back to GMMC_APPROVED for re-print
+        REJECTED: 'PRINTER_APPROVED', // Back to printer to fix and re-upload sample
     },
-    FINAL: {
-        APPROVED: 'BULK_PRINT_APPROVED',
-        REJECTED: 'GMMC_VERIFIED',
+    SCHOOL_VERIFIED: {
+        APPROVED: 'GMMC_VERIFIED',
+        REJECTED: 'SAMPLE_UPLOADED', // GMMC found issues school missed? Back to school/printer.
+    },
+    GMMC_VERIFIED: {
+        // Status typically updated by Dispatch API
+        APPROVED: 'DISPATCHED',
     },
 };
 
@@ -41,7 +50,7 @@ const create = async (data, user) => {
         [request_id, user.id, user.role, action, action_stage, comments || null]
     );
 
-    // Update request status
+    // Update request status based on current stage and action
     const newStatus = STATUS_MAP[action_stage]?.[action];
     if (newStatus) {
         await pool.query(

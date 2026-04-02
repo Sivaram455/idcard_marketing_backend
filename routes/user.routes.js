@@ -4,12 +4,11 @@ const userController = require('../controllers/user.controller');
 const { authenticate, authorizeRoles } = require('../middleware/auth.middleware');
 
 router.use(authenticate);
-router.use(authorizeRoles('GMMC_ADMIN'));
 
-router.get('/', userController.getAll);
-router.get('/stats', userController.getStats);
-router.post('/', userController.create);
-router.put('/:id', userController.update);
-router.post('/:id/reset-password', userController.resetPassword);
+router.get('/', authorizeRoles('Agent', 'marketer', 'admin', 'GMMC_ADMIN'), userController.getAll);
+router.get('/stats', authorizeRoles('GMMC_ADMIN'), userController.getStats);
+router.post('/', authorizeRoles('GMMC_ADMIN'), userController.create);
+router.put('/:id', authorizeRoles('GMMC_ADMIN'), userController.update);
+router.post('/:id/reset-password', authorizeRoles('GMMC_ADMIN'), userController.resetPassword);
 
 module.exports = router;

@@ -33,7 +33,7 @@ const getAllOrders = async () => {
 
 const getOrderById = async (id) => {
     const [rows] = await pool.query(`
-        SELECT o.*, s.school_name, s.city, s.state, s.mobile, s.email, s.Board, s.studentscount,
+        SELECT o.*, s.school_name, s.city, s.state, s.mobile, s.email, s.Board, s.studnetscount AS studentscount,
                u.full_name AS created_by_name
         FROM marketing_orders o
         LEFT JOIN schools s ON o.school_id = s.id

@@ -5,7 +5,7 @@ const { pool } = require('../config/db');
 const createSchool = async (data) => {
     const { school_name, contact_person1, contact_person2, mobile, email, address, city, state, comments, interested_in, studentscount, demorequire, Board } = data;
     const [result] = await pool.query(
-        `INSERT INTO schools (school_name, contact_person1, contact_person2, mobile, email, address, city, state, comments, interested_in, studentscount, demorequire, Board)
+        `INSERT INTO schools (school_name, contact_person1, contact_person2, mobile, email, address, city, state, comments, interested_in, studnetscount, demorequire, Board)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [school_name, contact_person1, contact_person2, mobile, email, address, city, state, comments, interested_in, studentscount, demorequire, Board]
     );
@@ -14,7 +14,7 @@ const createSchool = async (data) => {
 
 const getAllSchools = async () => {
     const [rows] = await pool.query(`
-        SELECT s.*, u.full_name AS assigned_to_name
+        SELECT DISTINCT s.*, s.studnetscount AS studentscount, u.full_name AS assigned_to_name
         FROM schools s
         LEFT JOIN users u ON s.assigned_to = u.id
         ORDER BY s.created_at DESC
@@ -24,7 +24,7 @@ const getAllSchools = async () => {
 
 const getSchoolById = async (id) => {
     const [rows] = await pool.query(`
-        SELECT s.*, u.full_name AS assigned_to_name
+        SELECT s.*, s.studnetscount AS studentscount, u.full_name AS assigned_to_name
         FROM schools s
         LEFT JOIN users u ON s.assigned_to = u.id
         WHERE s.id = ?
@@ -35,7 +35,7 @@ const getSchoolById = async (id) => {
 const updateSchool = async (id, data) => {
     const { school_name, contact_person1, contact_person2, mobile, email, address, city, state, comments, status, interested_in, studentscount, demorequire, Board } = data;
     const [result] = await pool.query(
-        `UPDATE schools SET school_name=?, contact_person1=?, contact_person2=?, mobile=?, email=?, address=?, city=?, state=?, comments=?, status=?, interested_in=?, studentscount=?, demorequire=?, Board=?
+        `UPDATE schools SET school_name=?, contact_person1=?, contact_person2=?, mobile=?, email=?, address=?, city=?, state=?, comments=?, status=?, interested_in=?, studnetscount=?, demorequire=?, Board=?
          WHERE id = ?`,
         [school_name, contact_person1, contact_person2, mobile, email, address, city, state, comments, status, interested_in, studentscount, demorequire, Board, id]
     );
@@ -68,7 +68,7 @@ const assignSchoolToAgent = async (agent_id, school_id, assigned_date) => {
 
 const getSchoolsByAgent = async (agent_id) => {
     const [rows] = await pool.query(
-        `SELECT s.*, asch.assigned_date 
+        `SELECT DISTINCT s.*, s.studnetscount AS studentscount, asch.assigned_date 
          FROM schools s
          JOIN agent_schools asch ON s.id = asch.school_id
          WHERE asch.agent_id = ?
@@ -82,10 +82,14 @@ const getSchoolsByAgent = async (agent_id) => {
 
 const createActivity = async (data) => {
     const { school_id, agent_id, activity_type, comments, visit_date, next_followup_date, reminder_time } = data;
+    
+    // Ensure next_followup_date is null if empty string
+    const followUpDate = next_followup_date || null;
+    
     const [result] = await pool.query(
-        `INSERT INTO school_activities (school_id, agent_id, activity_type, comments, visit_date, next_followup_date, reminder_time)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [school_id, agent_id, activity_type, comments, visit_date, next_followup_date, reminder_time]
+        `INSERT INTO school_activities (school_id, agent_id, activity_type, comments, visit_date, next_followup_date, reminder_time, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`,
+        [school_id, agent_id, activity_type, comments, visit_date, followUpDate, reminder_time]
     );
     
     // Update school status if activity is logged
@@ -138,7 +142,9 @@ const getPendingFollowUps = async (agent_id) => {
         `SELECT sa.*, s.school_name, s.mobile, s.email
          FROM school_activities sa
          JOIN schools s ON sa.school_id = s.id
-         WHERE sa.agent_id = ? AND sa.status = 'pending' AND sa.next_followup_date IS NOT NULL
+         WHERE sa.agent_id = ? 
+         AND (sa.status = 'pending' OR sa.status IS NULL OR sa.status = '') 
+         AND sa.next_followup_date IS NOT NULL
          ORDER BY sa.next_followup_date ASC`,
         [agent_id]
     );
@@ -151,7 +157,8 @@ const getAllPendingFollowUps = async () => {
          FROM school_activities sa
          JOIN schools s ON sa.school_id = s.id
          LEFT JOIN users u ON sa.agent_id = u.id
-         WHERE sa.status = 'pending' AND sa.next_followup_date IS NOT NULL
+         WHERE (sa.status = 'pending' OR sa.status IS NULL OR sa.status = '') 
+         AND sa.next_followup_date IS NOT NULL
          ORDER BY sa.next_followup_date ASC`
     );
     return rows;

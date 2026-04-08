@@ -169,6 +169,75 @@ const updateActivityStatus = async (id, status) => {
     return result.affectedRows;
 };
 
+const getAgentStats = async (agent_id) => {
+    const [agent] = await pool.query('SELECT id, full_name, email, role, phone, created_at FROM users WHERE id = ?', [agent_id]);
+    if (!agent[0]) return null;
+
+    const [schools] = await pool.query('SELECT COUNT(*) as count FROM schools WHERE assigned_to = ?', [agent_id]);
+    const [activities] = await pool.query('SELECT COUNT(*) as count FROM school_activities WHERE agent_id = ?', [agent_id]);
+    const [visits] = await pool.query('SELECT COUNT(*) as count FROM school_activities WHERE agent_id = ? AND activity_type = "visit"', [agent_id]);
+    const [followups] = await pool.query('SELECT COUNT(*) as count FROM school_activities WHERE agent_id = ? AND activity_type = "followup"', [agent_id]);
+    const [pendingFollowups] = await pool.query('SELECT COUNT(*) as count FROM school_activities WHERE agent_id = ? AND (status = "pending" OR status IS NULL OR status = "") AND next_followup_date IS NOT NULL', [agent_id]);
+    
+    // Total orders booked by this agent's schools
+    const [orders] = await pool.query(`
+        SELECT COUNT(*) as count, SUM(total_amount) as total_revenue
+        FROM marketing_orders o
+        JOIN schools s ON o.school_id = s.id
+        WHERE s.assigned_to = ?
+    `, [agent_id]);
+
+    return {
+        profile: agent[0],
+        stats: {
+            assignedLeads: schools[0].count,
+            totalActivities: activities[0].count,
+            visits: visits[0].count,
+            followups: followups[0].count,
+            pendingFollowups: pendingFollowups[0].count,
+            ordersBooked: orders[0].count,
+            totalRevenue: orders[0].total_revenue || 0
+        }
+    };
+};
+
+const getGlobalStats = async () => {
+    const [schools] = await pool.query('SELECT COUNT(*) as count FROM schools');
+    const [activities] = await pool.query('SELECT COUNT(*) as count FROM school_activities');
+    const [visits] = await pool.query('SELECT COUNT(*) as count FROM school_activities WHERE activity_type = "visit"');
+    const [followups] = await pool.query('SELECT COUNT(*) as count FROM school_activities WHERE activity_type = "followup"');
+    const [pendingFollowups] = await pool.query('SELECT COUNT(*) as count FROM school_activities WHERE (status = "pending" OR status IS NULL OR status = "") AND next_followup_date IS NOT NULL');
+    
+    const [orders] = await pool.query(`
+        SELECT COUNT(*) as count, SUM(total_amount) as total_revenue
+        FROM marketing_orders
+    `);
+
+    // Top performers (Lead closures)
+    const [performers] = await pool.query(`
+        SELECT u.full_name, COUNT(o.id) as orders_count, SUM(o.total_amount) as revenue
+        FROM users u
+        JOIN schools s ON s.assigned_to = u.id
+        JOIN marketing_orders o ON o.school_id = s.id
+        GROUP BY u.id
+        ORDER BY revenue DESC
+        LIMIT 5
+    `);
+
+    return {
+        stats: {
+            assignedLeads: schools[0].count,
+            totalActivities: activities[0].count,
+            visits: visits[0].count,
+            followups: followups[0].count,
+            pendingFollowups: pendingFollowups[0].count,
+            ordersBooked: orders[0].count,
+            totalRevenue: orders[0].total_revenue || 0
+        },
+        performers
+    };
+};
+
 module.exports = {
     createSchool,
     getAllSchools,
@@ -183,5 +252,7 @@ module.exports = {
     getAllActivities,
     getPendingFollowUps,
     getAllPendingFollowUps,
-    updateActivityStatus
+    updateActivityStatus,
+    getAgentStats,
+    getGlobalStats
 };

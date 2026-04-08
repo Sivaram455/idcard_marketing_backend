@@ -21,13 +21,23 @@ const createSchool = async (req, res) => {
 const getAllSchools = async (req, res) => {
     try {
         const userRole = req.user.role?.toUpperCase();
-        // If agent, only get assigned schools. If admin, get all.
+        // If agent/marketing, only get assigned schools. If admin, get all.
         let schools;
-        if (userRole === 'AGENT' || userRole === 'MARKETER') {
+        if (userRole === 'AGENT' || userRole === 'MARKETER' || userRole === 'MARKETING') {
             schools = await marketingService.getSchoolsByAgent(req.user.id);
         } else {
             schools = await marketingService.getAllSchools();
         }
+        res.json({ success: true, data: schools });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+// Admin-only: always returns ALL schools (used by Assign Leads page)
+const getAllSchoolsAdmin = async (req, res) => {
+    try {
+        const schools = await marketingService.getAllSchools();
         res.json({ success: true, data: schools });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
@@ -118,14 +128,36 @@ const updateActivityStatus = async (req, res) => {
     }
 };
 
+const getAgentStats = async (req, res) => {
+    try {
+        const userRole = req.user.role?.toUpperCase();
+        const isAdmin = userRole === 'ADMIN' || userRole === 'GMMC_ADMIN';
+        
+        // If it's an admin checking "me", show global stats
+        if (isAdmin && req.params.id === 'me') {
+            const stats = await marketingService.getGlobalStats();
+            return res.json({ success: true, data: { ...stats, isGlobal: true, profile: req.user } });
+        }
+
+        const id = req.params.id === 'me' ? req.user.id : req.params.id;
+        const stats = await marketingService.getAgentStats(id);
+        if (!stats) return res.status(404).json({ success: false, message: 'Agent not found' });
+        res.json({ success: true, data: stats });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
 module.exports = {
     createSchool,
     getAllSchools,
+    getAllSchoolsAdmin,
     getSchoolDetail,
     updateSchool,
     assignSchool,
     createActivity,
     getMyActivities,
     getPendingFollowUps,
-    updateActivityStatus
+    updateActivityStatus,
+    getAgentStats
 };
